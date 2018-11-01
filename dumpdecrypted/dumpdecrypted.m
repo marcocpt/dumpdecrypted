@@ -30,12 +30,15 @@ void dumptofile(const char *path, const struct mach_header *mh){
     unsigned int fileoffs = 0, off_cryptid = 0, restsize;
     int i,fd,outfd,r,n,toread;
     char *tmp;
-    
+  
+    // 获取绝对路径
     if (realpath(path, rpath) == NULL) {
+        // 复制 path 到 rpath, sizeof(rpath) 用来避免缓冲区溢出
         strlcpy(rpath, path, sizeof(rpath));
     }
     
     /* extract basename */
+    // 查找一个字符串在另一个字符串中 末次 出现的位置，并返回从字符串中的这个位置起，一直到字符串结束的所有字符；
     tmp = strrchr(rpath, '/');
     printf("\n\n");
     if (tmp == NULL) {
@@ -90,6 +93,7 @@ void dumptofile(const char *path, const struct mach_header *mh){
             /* Is this a FAT file - we assume the right endianess */
             if (fh->magic == FAT_CIGAM) {
                 NSLog(@"@Monkey-dump: [+] Executable is a FAT image - searching for right architecture\n");
+                // &fh[1] 为偏移 struct fat_header 的地址，及为第一个架构的 struct fat_arch 首地址
                 arch = (struct fat_arch *)&fh[1];
                 for (i=0; i<swap32(fh->nfat_arch); i++) {
                     if ((mh->cputype == swap32(arch->cputype)) && (mh->cpusubtype == swap32(arch->cpusubtype))) {
@@ -147,7 +151,10 @@ void dumptofile(const char *path, const struct mach_header *mh){
             
             /* calculate address of beginning of crypted data */
             n = fileoffs + eic->cryptoff;
-            
+            // lseek -- reposition read/write file offset,
+            // If whence is SEEK_END, the offset is set to the size of the file plus offset bytes;
+            // If whence is SEEK_SET, the offset is set to offset bytes
+            // If whence is SEEK_CUR, the offset is set to its current location plus offset bytes.
             restsize = lseek(fd, 0, SEEK_END) - n - eic->cryptsize;
             lseek(fd, 0, SEEK_SET);
             
@@ -222,6 +229,7 @@ void dumptofile(const char *path, const struct mach_header *mh){
 
 static void image_added(const struct mach_header *mh, intptr_t slide) {
     Dl_info image_info;
+    // dladdr -- find the image containing a given address
     int result = dladdr(mh, &image_info);
     dumptofile(image_info.dli_fname, mh);
 }
@@ -230,6 +238,7 @@ __attribute__((constructor))
 static void dumpexecutable() {
     printf("@Monkey-dump: mach-o decryption dumper\n\n");
     printf("@Monkey-dump: DISCLAIMER: This tool is only meant for security research purposes, not for application crackers.");
+    // dyld 加载 image 后调用的回调函数
     _dyld_register_func_for_add_image(&image_added);
 }
 
