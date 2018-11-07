@@ -17,7 +17,7 @@
 #include <mach-o/loader.h>
 #include <mach-o/dyld.h>
 #include <Foundation/Foundation.h>
-
+// swap32 的 替代函数 CFSwapInt32
 #define swap32(value) (((value & 0xFF000000) >> 24) | ((value & 0x00FF0000) >> 8) | ((value & 0x0000FF00) << 8) | ((value & 0x000000FF) << 24) )
 
 void dumptofile(const char *path, const struct mach_header *mh){
